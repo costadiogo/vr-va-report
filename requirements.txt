@@ -1,0 +1,12 @@
+pandas
+numpy
+openpyxl
+python-dateutil
+streamlit
+langchain-openai
+langgraph
+streamlit-aggrid
+streamlit-option-menu
+db-sqlite3
+langgraph-openai
+langchain_core
