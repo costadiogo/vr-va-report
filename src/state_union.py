@@ -2,9 +2,9 @@ from typing import Optional
 from . import utils
 
 # -----------------------
-# Mapeamento sindicato -> UF/Estado (para achar o valor VR)
+# Mapeamento sindicato -> UF/State (para achar o valor VR)
 # -----------------------
-def infer_estado_from_sindicato(s: str) -> Optional[str]:
+def infer_state_from_union(s: str) -> Optional[str]:
     if not isinstance(s, str):
         return None
     s0 = s.upper()
@@ -20,14 +20,14 @@ def infer_estado_from_sindicato(s: str) -> Optional[str]:
         return "Paraná"
     
     # Fallback para método geral
-    UF_TO_ESTADO = {
+    UF_TO_STATE = {
         "SP": "São Paulo",
         "RJ": "Rio de Janeiro", 
         "RS": "Rio Grande do Sul",
         "PR": "Paraná",
     }
     
-    for uf, estado in UF_TO_ESTADO.items():
+    for uf, state in UF_TO_STATE.items():
         if f" {uf} " in s0 or s0.endswith(f" {uf}.") or s0.endswith(f" {uf}") or s0.startswith(f"{uf} "):
-            return estado
+            return state
     return None

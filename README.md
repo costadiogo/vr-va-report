@@ -8,154 +8,122 @@ Sistema automatizado para cálculo e processamento de benefícios de Vale Refei�
 
 ## 🚀 Funcionalidades
 
-- **Processamento Automatizado**: Leitura e consolidação de múltiplas planilhas Excel
-- **Cálculo Inteligente**: Aplicação automática de regras de negócio para VR/VA
-- **Gestão de Status**: Controle de funcionários ativos, desligados, em férias e afastados
-- **Cálculo por Sindicato**: Valores diferenciados por estado/região sindical
-- **Relatórios Estruturados**: Geração de planilhas com cálculos detalhados
-- **Validações Automáticas**: Verificação de datas, status e regras de elegibilidade
+- Upload e validação automática de planilhas Excel (.xlsx)
+- Processamento ETL completo: ativos, admissões, desligamentos, férias, etc.
+- Cálculo de dias úteis proporcionais, valores diários por estado/sindicato
+- Aplicação de regras de negócio para elegibilidade e descontos
+- Geração de relatório Excel formatado, pronto para download
+- Interface web interativa via Streamlit
+- Logs detalhados e feedback visual do processamento
 
-## 🏗️ Arquitetura
+## 🏗️ Estrutura do Projeto
 
 ```
 desafio04/
-├── app.py                # Arquivo principal de execução
-├── src/                  # Módulos do sistema
-│   ├── process.py        # Lógica principal de processamento
-│   ├── utils.py          # Funções utilitárias
-│   ├── state_union.py    # Mapeamento sindicato-estado
-│   └── format_value.py   # Formatação de valores monetários
-├── data/                 # Arquivos de entrada (planilhas Excel)
-└── venv/                 # Ambiente virtual Python
+├── st_app.py                # Interface principal Streamlit
+├── database.db              # Banco SQLite gerado automaticamente
+├── requirements.txt         # Dependências Python
+├── src/
+│   ├── agent.py             # Agente VRVA (workflow, integração LLM)
+│   ├── state_union.py       # Mapeamento sindicato-estado
+│   ├── utils.py             # Funções utilitárias
+│   └── tools/
+│       ├── actives_tool.py
+│       ├── admission_tool.py
+│       ├── dismissed_tool.py
+│       ├── business_days_tool.py
+│       ├── union_value_tool.py
+│       └── vacation_tool.py
+├── data/                    # Planilhas de entrada (exemplo)
+│   ├── ATIVOS.xlsx
+│   ├── ADMISSÃO_ABRIL.xlsx
+│   └── ...
+├── img/                     # Imagens (logo)
+├── logger/                  # Configuração de logs
+├── README.md
+└── LICENSE
 ```
 
 ## 📊 Dados de Entrada
 
-O sistema processa as seguintes planilhas Excel:
+O sistema espera arquivos Excel com nomes e colunas padrão, por exemplo:
 
-- **ATIVOS.xlsx**: Funcionários ativos na empresa
-- **ADMISSÃO_ABRIL.xlsx**: Novos funcionários admitidos no mês
-- **DESLIGADOS.xlsx**: Funcionários desligados
-- **FÉRIAS.xlsx**: Funcionários em período de férias
-- **AFASTAMENTOS.xlsx**: Funcionários afastados (licenças)
-- **ESTÁGIO.xlsx**: Estagiários
-- **APRENDIZ.xlsx**: Aprendizes
-- **EXTERIOR.xlsx**: Funcionários no exterior
-- **Base_dias_uteis.xlsx**: Base de dias úteis por sindicato
-- **Base_sindicato_x_valor.xlsx**: Valores de VR por estado
+- **ATIVOS.xlsx**: Funcionários ativos (`MATRICULA`, `TITULO DO CARGO`, `DESC. SITUACAO`, `Sindicato`)
+- **ADMISSÃO_ABRIL.xlsx**: Novos admitidos (`MATRICULA`, `Admissão`, `Cargo`)
+- **DESLIGADOS.xlsx**: Funcionários desligados (`MATRICULA`, `DATA DEMISSÃO`, `COMUNICADO DE DESLIGAMENTO`)
+- **FÉRIAS.xlsx**: Funcionários em férias (`MATRICULA`, `DIAS DE FÉRIAS`)
+- **Base_dias_uteis.xlsx**, **Base_sindicato_x_valor.xlsx**: Dados auxiliares
+
+> Os nomes dos arquivos podem variar, pois o sistema identifica automaticamente pelo padrão no nome.
 
 ## ⚙️ Regras de Negócio
 
-### Elegibilidade
-- Funcionários ativos são elegíveis para VR/VA
-- Estagiários, aprendizes e diretores são **excluídos**
-- Funcionários em férias ou afastados são **excluídos**
-
-### Regras de Desligamento
-- **Desligados até dia 15 com OK**: Removidos do cálculo
-- **Desligados até dia 15 sem OK**: VR integral
-- **Desligados após dia 15**: VR integral (ajuste na rescisão)
-
-### Cálculo de Valores
-- Valor base por estado/região sindical
-- Multiplicação pelos dias úteis do mês
-- Divisão: 80% custo empresa, 20% desconto profissional
+- **Elegibilidade**: Exclui aprendizes, estagiários, diretores e gerentes
+- **Desligamento**: Até dia 15 com comunicado OK = excluído; até dia 15 sem OK = VR integral; após dia 15 = VR proporcional
+- **Admissão**: Admissão no mês = VR proporcional
+- **Férias**: Desconto de dias de férias nos dias úteis
+- **Valores**: Valor diário por estado, conforme sindicato
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Python 3.x**
-- **Pandas**: Manipulação de dados
-- **NumPy**: Cálculos numéricos
-- **openpyxl**: Leitura de arquivos Excel
-- **dateutil**: Manipulação de datas
+- **Python 3.12+**
+- **Pandas** e **openpyxl** para manipulação de dados
+- **SQLite** para persistência temporária
+- **Streamlit** para interface web
+- **LangGraph** e **LangChain OpenAI** para workflow e integração LLM
 
 ## 📦 Instalação
 
-1. **Clone o repositório**
-   ```bash
+1. Clone o repositório:
+   ```sh
    git clone https://github.com/costadiogo/vr-va-report.git
    cd desafio04
    ```
 
-2. **Crie um ambiente virtual**
-   ```bash
+2. Crie e ative um ambiente virtual:
+   ```sh
    python -m venv venv
-   ```
-
-3. **Ative o ambiente virtual**
-   ```bash
    # Windows
    venv\Scripts\activate
-   
    # Linux/Mac
    source venv/bin/activate
    ```
 
-4. **Instale as dependências**
-   ```bash
-   pip install pandas numpy openpyxl python-dateutil
+3. Instale as dependências:
+   ```sh
+   pip install -r requirements.txt
    ```
 
 ## 🚀 Como Usar
 
-### Execução Básica
-```bash
-python app.py
-```
+1. Execute a aplicação Streamlit:
+   ```sh
+   streamlit run app.py
+   ```
 
-### Estrutura de Dados
-Certifique-se de que as planilhas na pasta `data/` contenham as colunas necessárias:
+2. Na interface:
+   - Insira sua API Key da OpenAI
+   - Faça upload das planilhas necessárias
+   - Informe a competência (ex: 05-2025)
+   - Clique em "Gerar Relatório"
 
-- **Colunas obrigatórias**: `matricula`, `sindicato`
-- **Colunas opcionais**: `cargo`, `admissao`, `data_demissao`, `comunicado_de_desligamento`
-
-### Saída
-O sistema gera um arquivo Excel (`VR MENSAL 05-2025.xlsx`) com as seguintes colunas:
-
-| Coluna | Descrição |
-|--------|-----------|
-| Matricula | Número de matrícula do funcionário |
-| Admissão | Data de admissão |
-| Sindicato do Colaborador | Sindicato/região |
-| Competência | Mês/ano de referência |
-| Dias | Dias úteis do mês |
-| Valor | Valor base do VR por dia |
-| TOTAL | Valor total do VR no mês |
-| Custo empresa | 80% do valor total |
-| Desconto profissional | 20% do valor total |
-| OBS GERAL | Campo para observações |
-
-## 🔧 Configuração
-
-### Personalização de Estados
-Edite o arquivo `src/state_union.py` para adicionar novos mapeamentos de sindicato para estado:
-
-```python
-def infer_estado_from_sindicato(s: str) -> Optional[str]:
-    # Adicione novos mapeamentos aqui
-    if "SEU_SINDICATO" in s.upper():
-        return "Seu Estado"
-```
-
-### Valores por Estado
-Atualize a planilha `Base_sindicato_x_valor.xlsx` para modificar os valores base de VR por estado.
+3. Baixe o relatório Excel gerado ao final do processamento.
 
 ## 📝 Logs e Debug
 
-O sistema exibe logs detalhados durante a execução:
-- Contagem de registros processados
-- Funcionários removidos por categoria
-- Aplicação de regras de negócio
-- Status final do processamento
+- Logs detalhados são exibidos no terminal e na interface.
+- Em caso de erro, detalhes técnicos e dicas são mostrados na interface.
 
-## 🤝 Contribuição
+## 📝 Personalização
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+- Para alterar o mapeamento sindicato-estado, edite [`src/state_union.py`](src/state_union.py).
+- Para ajustar regras de negócio, revise os arquivos em [`src/tools/`](src/tools/).
+- Para novos tipos de arquivos, adapte os padrões em [`src/agent.py`](src/agent.py).
 
 ## 📄 Licença
 
-Este projeto está sob a licença especificada no arquivo `LICENSE`.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE).
+
+---
+
+Desenvolvido por Diogo Costa para o curso I2A2.
