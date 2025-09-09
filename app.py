@@ -34,7 +34,8 @@ with st.sidebar:
     1. Insira sua API Key da OpenAI
     2. Faça upload das planilhas (.xlsx)
     3. Informe a competência
-    4. Clique em "Gerar Relatório"
+    4. Clique em Gerar Relatório
+    5. Clique em Baixar Relatório VR/VA
     """)
         
 
@@ -44,7 +45,7 @@ with col1:
     api_key = st.text_input("🔑 API Key OpenAI", type="password", help="Sua chave de API da OpenAI")
 
 with col2:
-    competencia = st.text_input(
+    competence = st.text_input(
         "📅 Competência", 
         value=datetime.now().strftime("%m-%Y"),
         placeholder="ex: 05-2025"
@@ -106,7 +107,7 @@ with col4:
         st.warning("⚠️ Nenhum arquivo carregado")
 
 with col5:
-    if competencia:
+    if competence:
         st.success("✅ Competência definida")
     else:
         st.warning("⚠️ Competência não definida")
@@ -122,7 +123,7 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
         st.error("❌ Faça upload dos arquivos!")
     elif len(files) > 10:
         st.error(f"❌ Você só pode enviar até 10 arquivos. Você enviou {len(files)}.")
-    elif not competencia:
+    elif not competence:
         st.error("❌ Informe a competência!")
     else:
         progress_container = st.container()
@@ -136,21 +137,21 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
                 if not os.path.exists(DB_PATH):
                     open(DB_PATH, 'a').close()
                 
-                agente_vrva = agent.VRVAAgent(DB_PATH, api_key)
+                vrva_agent = agent.VRVAAgent(DB_PATH, api_key)
                 
                 progress_bar.progress(20, text="📁 Preparando arquivos para processamento...")
 
-                agente_vrva.set_files(files)
+                vrva_agent.set_files(files)
 
                 workflow_status = st.empty()
                 
-                progress_bar.progress(30, text="🔄 Executando workflow LangGraph...")
+                progress_bar.progress(30, text="🔄 Executando...")
 
                 initial_state = {
                     'messages': [],
                     'db_path': DB_PATH,
                     'files': files,
-                    'competencia': competencia,
+                    'competencia': competence,
                     'current_step': "Iniciando",
                     'processed_files': {},
                     'calculations_done': False,
@@ -168,7 +169,7 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
                     ("generate_report", "📊 Gerando relatório final", 95)
                 ]
                 
-                final_state = agente_vrva.workflow.invoke(initial_state)
+                final_state = vrva_agent.workflow.invoke(initial_state)
                 
                 for step_name, step_desc, progress_val in workflow_steps:
                     progress_bar.progress(progress_val, text=step_desc)
@@ -187,7 +188,7 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
                 elif final_state.get('report_generated'):
                     st.success("🎉 **Relatório gerado com sucesso!**")
                     
-                    nome_arquivo = f"VR MENSAL {competencia.replace('-', '.')}.xlsx"
+                    file_name = f"VR MENSAL {competence.replace('-', '.')}.xlsx"
                     
                     with st.expander("📊 Detalhes do Processamento"):
                         st.write("**Arquivos processados:**")
@@ -198,14 +199,14 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
                         st.write(f"**Último step:** {final_state.get('current_step', 'N/A')}")
                         st.write(f"**Cálculos realizados:** {'✅ Sim' if final_state.get('calculations_done') else '❌ Não'}")
 
-                    if os.path.exists(nome_arquivo):
-                        tamanho = os.path.getsize(nome_arquivo) / 1024  # KB
+                    if os.path.exists(file_name):
+                        tamanho = os.path.getsize(file_name) / 1024  # KB
                         
                         st.info(f"""
                             📋 **Detalhes do Relatório VR/VA:**
-                            - **Arquivo:** {nome_arquivo}
+                            - **Arquivo:** {file_name}
                             - **Tamanho:** {tamanho:.1f} KB
-                            - **Competência:** {competencia}
+                            - **Competência:** {competence}
                             - **Cálculos:** IA Generativa (GPT-4)
                             - **Gerado em:** {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}
 
@@ -217,11 +218,11 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
                         )
                         
                         # Botão de download
-                        with open(nome_arquivo, "rb") as file:
+                        with open(file_name, "rb") as file:
                             st.download_button(
                                 label="📥 Baixar Relatório VR/VA",
                                 data=file.read(),
-                                file_name=nome_arquivo,
+                                file_name=file_name,
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                 use_container_width=True
                             )
@@ -229,16 +230,16 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
                         st.warning("⚠️ Arquivo não encontrado após geração")
                         
                         # Verificar outros arquivos Excel no diretório
-                        arquivos_excel = [f for f in os.listdir('.') if f.endswith('.xlsx')]
-                        if arquivos_excel:
+                        generated_file = [f for f in os.listdir('.') if f.endswith('.xlsx')]
+                        if generated_file:
                             st.info("📁 Arquivos Excel encontrados no diretório:")
-                            for arquivo in arquivos_excel:
-                                if 'relatorio' in arquivo.lower():
-                                    with open(arquivo, "rb") as file:
+                            for file in generated_file:
+                                if 'relatorio' in file.lower():
+                                    with open(file, "rb") as file:
                                         st.download_button(
-                                            label=f"📥 Baixar {arquivo}",
+                                            label=f"📥 Baixar {file}",
                                             data=file.read(),
-                                            file_name=arquivo,
+                                            file_name=file,
                                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                             use_container_width=True
                                         )
@@ -342,7 +343,7 @@ if st.button("🚀 Gerar Relatório", type="primary", use_container_width=True):
 st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: left; color: #666; font-size: 12px;'>
+    <div style='text-align: center; color: #666; font-size: 12px;'>
     🤖 <strong>AI-Powered:</strong> OpenAI GPT-4 para cálculos inteligentes<br/>
     🔄 <strong>Workflow:</strong> LangGraph para orquestração estruturada<br/>
     📊 <strong>ETL:</strong> Pandas + SQLite para processamento de dados<br/>
