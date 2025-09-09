@@ -2,7 +2,6 @@ import re
 import unicodedata
 import sqlite3
 import pandas as pd
-import logging
 
 from typing import Dict, Any, List, Optional, Union
 from langchain_openai import ChatOpenAI
@@ -18,12 +17,7 @@ from src.tools.dismissed_tool import process_fired
 from src.tools.business_days_tool import process_business_days
 from src.tools.union_value_tool import process_daily_values
 from src.tools.vacation_tool import process_vacation
-
-# ==============================
-# LOGGING CONFIG
-# ==============================
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
+from src.logger.logger import logger
 
 # ==============================
 # STATE
@@ -71,9 +65,9 @@ class VRVAAgent:
                 - Considere a data de 15/04/2025 a 15/05/2025 para todos os cálculos.
 
                 CÁLCULOS NECESSÁRIOS:
-                1. TOTAL = COALESCE(DIAS_UTEIS,0) × COALESCE(VALOR_DIARIO,0)
-                2. CUSTO_EMPRESA = TOTAL × 0.80
-                3. CUSTO_PROFISSIONAL = TOTAL × 0.20
+                1. TOTAL = COALESCE(DIAS_UTEIS,0) * COALESCE(VALOR_DIARIO,0)
+                2. CUSTO_EMPRESA = TOTAL * 0.80
+                3. CUSTO_PROFISSIONAL = TOTAL * 0.20
                 4. OBS_GERAL = 
                    - Se DATA_DEMISSAO <= dia 15 → "Desligamento até dia 15 - Verificar elegibilidade"
                    - Se DATA_DEMISSAO > dia 15 → "Desligamento após dia 15 - Valor proporcional"
@@ -264,7 +258,7 @@ class VRVAAgent:
         return state
 
     # ==============================
-    # SAVE REPORT (AGORA COM 2 ABAS)
+    # SAVE REPORT
     # ==============================
     def formatted_monetary_values(self, valor: float) -> str:
         """
@@ -335,8 +329,8 @@ class VRVAAgent:
         df_summary = pd.DataFrame([summary])
 
         with pd.ExcelWriter(filename, engine="openpyxl") as writer:
-            df_report_complete.to_excel(writer, sheet_name="Relatório_VRVA", index=False)
-            df_summary.to_excel(writer, sheet_name="Custos", index=False)
+            df_report_complete.to_excel(writer, sheet_name="Relatorio", index=False)
+            df_summary.to_excel(writer, sheet_name="Custos totais", index=False)
 
     # ==============================
     # HELPERS (SQL / LLM / FILES)
@@ -364,9 +358,8 @@ class VRVAAgent:
             return "Nenhum dado encontrado"
 
     def _extract_sql_from_response(self, response: str) -> List[str]:
-        # remove blocos markdown
         text = response.replace("```sql", "").replace("```", "")
-        # split & keep apenas UPDATEs que mencionem a tabela report
+
         commands = []
         for part in text.split(";"):
             part = part.strip()
@@ -391,16 +384,11 @@ class VRVAAgent:
 
     def _normalize_text(self, text: str) -> str:
         """Converte para minúsculas, remove acentos e caracteres não alfanuméricos."""
-        # Remove acentos (decomposição NFD)
         text = unicodedata.normalize('NFD', text).encode('ascii', 'ignore').decode('utf-8')
-        # Mantém apenas letras e números, convertendo para minúsculas
         return re.sub(r'[^a-z0-9]', '', text.lower())
     
     def _find_and_load_file(self, files_or_state: Optional[Union[List[Any], VRVAState]], file_type: str) -> pd.DataFrame:
-        """
-        Localiza e carrega arquivo com base em padrões, usando nomes normalizados 
-        para maior robustez (ignora acentos, maiúsculas/minúsculas e caracteres especiais).
-        """
+        """Localiza e carrega arquivo com base em padrões, usando nomes normalizados"""
         patterns = {
             "ativos": ["ativos", "ativo", "active", "funcionarios"],
             "admissao": ["admissao", "admission", "admitidos"],
@@ -416,7 +404,6 @@ class VRVAAgent:
         else:
             files = self.files
 
-        # 🔑 Normaliza o tipo
         normalized_type = self._normalize_text(file_type)
         search_patterns = [self._normalize_text(p) for p in patterns.get(normalized_type, [normalized_type])]
 
@@ -440,7 +427,7 @@ class VRVAAgent:
         return pd.DataFrame()
 
     def set_files(self, files: List[Any]):
-        """Define arquivos para processamento (chamado pelo Streamlit)."""
+        """Define arquivos para processamento."""
         self.files = files
         logger.info("Arquivos definidos: %s", [getattr(f, "name", str(f)) for f in files])
 
@@ -455,13 +442,10 @@ class VRVAAgent:
             return False
 
     # ==============================
-    # EXECUÇÃO DO WORKFLOW (PÚBLICO)
+    # EXECUÇÃO DO WORKFLOW
     # ==============================
     def build_excel_report(self, competencia: str) -> bool:
-        """
-        Executa o workflow completo. Retorna True se relatório gerado.
-        state inicial precisa conter 'files' (opcional, se você chamou set_files antes)
-        """
+        """Executa o workflow completo"""
         try:
             initial_state: VRVAState = VRVAState(
                 messages=[],

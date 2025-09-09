@@ -11,8 +11,8 @@ BUSINESS_DAYS_BY_STATE = {
     "Paraná": 22
 }
 
-PERIODO_START = pd.to_datetime("2025-04-15")
-PERIODO_END = pd.to_datetime("2025-05-15")
+PERIOD_START = pd.to_datetime("2025-04-15")
+PERIOD_END = pd.to_datetime("2025-05-15")
 
 def business_days_between(start, end, holidays=None):
     """Conta days úteis entre start e end, excluindo feriados se fornecidos."""
@@ -23,15 +23,15 @@ def business_days_between(start, end, holidays=None):
 
 def calculates_proportional_days(estado: str, admission, dismisseds, holidays_days: int, holidays_by_estado: dict = None):
     """
-    Calcula days úteis proporcionais entre PERIODO_START e PERIODO_END,
-    considerando admissão, dismisseds, férias e feriados.
+    Calcula dias úteis proporcionais entre periodo incial e preiodo final,
+    considerando admissão, demissão, férias e feriados.
     """
     total_days = BUSINESS_DAYS_BY_STATE.get(estado, 0)
     if total_days == 0:
         return 0
 
-    start = PERIODO_START if pd.isna(admission) else max(PERIODO_START, pd.to_datetime(admission))
-    end = PERIODO_END if pd.isna(dismisseds) else min(PERIODO_END, pd.to_datetime(dismisseds))
+    start = PERIOD_START if pd.isna(admission) else max(PERIOD_START, pd.to_datetime(admission))
+    end = PERIOD_END if pd.isna(dismisseds) else min(PERIOD_END, pd.to_datetime(dismisseds))
     if start > end:
         return 0
 
@@ -39,12 +39,12 @@ def calculates_proportional_days(estado: str, admission, dismisseds, holidays_da
     if holidays_by_estado and estado in holidays_by_estado:
         holidays = holidays_by_estado[estado]
 
-    total_bd_period = business_days_between(PERIODO_START, PERIODO_END, holidays=holidays)
+    total_bd_period = business_days_between(PERIOD_START, PERIOD_END, holidays=holidays)
     bd_between = business_days_between(start, end, holidays=holidays)
 
     if total_bd_period == 0:
         days_period = (end - start).days + 1
-        total_period = (PERIODO_END - PERIODO_START).days + 1
+        total_period = (PERIOD_END - PERIOD_START).days + 1
         days = int(round(total_days * days_period / total_period))
     else:
         days = int(round(total_days * bd_between / total_bd_period))
@@ -54,7 +54,7 @@ def calculates_proportional_days(estado: str, admission, dismisseds, holidays_da
 
 
 def process_business_days(db_path: str, holidays_by_estado: dict = None):
-    """Atualiza coluna DIAS_UTEIS considerando admissões, dismissedss e férias."""
+    """Atualiza coluna DIAS_UTEIS considerando admissões, demissões e férias."""
     with sqlite3.connect(db_path) as conn:
         df_base = pd.read_sql('SELECT * FROM report', conn)
 
@@ -82,4 +82,4 @@ def process_business_days(db_path: str, holidays_by_estado: dict = None):
 
         df_base.to_sql('report', conn, if_exists='replace', index=False)
 
-    logger.info("✅ Days úteis proporcionais processados com sucesso")
+    logger.info("✅ Dias úteis proporcionais processados com sucesso")
