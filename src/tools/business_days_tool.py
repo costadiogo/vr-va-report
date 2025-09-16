@@ -15,18 +15,18 @@ PERIOD_START = pd.to_datetime("2025-04-15")
 PERIOD_END = pd.to_datetime("2025-05-15")
 
 def business_days_between(start, end, holidays=None):
-    """Conta days úteis entre start e end, excluindo feriados se fornecidos."""
+    """Conta dias úteis entre start e end, excluindo feriados se fornecidos."""
     if pd.isna(start) or pd.isna(end) or end < start:
         return 0
     rng = pd.bdate_range(start=start, end=end, holidays=holidays)
     return len(rng)
 
-def calculates_proportional_days(estado: str, admission, dismisseds, holidays_days: int, holidays_by_estado: dict = None):
+def calculates_proportional_days(state: str, admission, dismisseds, holidays_days: int, holidays_by_state: dict = None):
     """
     Calcula dias úteis proporcionais entre periodo incial e preiodo final,
     considerando admissão, demissão, férias e feriados.
     """
-    total_days = BUSINESS_DAYS_BY_STATE.get(estado, 0)
+    total_days = BUSINESS_DAYS_BY_STATE.get(state, 0)
     if total_days == 0:
         return 0
 
@@ -36,8 +36,8 @@ def calculates_proportional_days(estado: str, admission, dismisseds, holidays_da
         return 0
 
     holidays = None
-    if holidays_by_estado and estado in holidays_by_estado:
-        holidays = holidays_by_estado[estado]
+    if holidays_by_state and state in holidays_by_state:
+        holidays = holidays_by_state[state]
 
     total_bd_period = business_days_between(PERIOD_START, PERIOD_END, holidays=holidays)
     bd_between = business_days_between(start, end, holidays=holidays)
@@ -53,7 +53,7 @@ def calculates_proportional_days(estado: str, admission, dismisseds, holidays_da
     return max(0, days)
 
 
-def process_business_days(db_path: str, holidays_by_estado: dict = None):
+def process_business_days(db_path: str, holidays_by_state: dict = None):
     """Atualiza coluna DIAS_UTEIS considerando admissões, demissões e férias."""
     with sqlite3.connect(db_path) as conn:
         df_base = pd.read_sql('SELECT * FROM report', conn)
@@ -75,7 +75,7 @@ def process_business_days(db_path: str, holidays_by_estado: dict = None):
                 row.get('ADMISSAO'),
                 row.get('DATA_DEMISSAO'),
                 row.get('DIAS_DE_FERIAS', 0),
-                holidays_by_estado
+                holidays_by_state
             ),
             axis=1
         )

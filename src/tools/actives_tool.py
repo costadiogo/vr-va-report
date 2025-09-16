@@ -21,7 +21,7 @@ def process_actives(db_path: str, df_actives: pd.DataFrame):
         df['SINDICATO'] = df['SINDICATO'].astype(str).str.strip()
         df['CARGO'] = df['CARGO'].astype(str).str.strip()
         
-        exclusions = ["GERENTE", "APRENDIZ", "ESTAGIARIO", "DIRETOR"]
+        exclusions = ["APRENDIZ", "ESTAGIARIO", "DIRETOR"]
 
         df_filter = df[~df['CARGO'].str.upper().str.startswith(tuple(exclusions))]
         
