@@ -72,6 +72,7 @@ class VRVAAgent:
                    - Se DATA_DEMISSAO <= dia 15 → "Desligamento até dia 15 - Verificar elegibilidade"
                    - Se DATA_DEMISSAO > dia 15 → "Desligamento após dia 15 - Valor proporcional"
                    - Se ADMISSAO no mesmo mês da competência → "Admissão no mês - Valor proporcional"
+                   - Se DIAS_UTEIS != (21, 22) → "Férias - Valor proporcional"
                    - Caso contrário → "Funcionário ativo - Valor integral"
 
                 INSTRUÇÃO:
