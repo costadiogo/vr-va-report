@@ -19,8 +19,8 @@ def process_vacation(db_path: str, df_vacation: pd.DataFrame):
     df_v.rename(columns=lambda c: c.strip().upper().replace(" ", "_"), inplace=True)
     df_v["MATRICULA"] = df_v["MATRICULA"].astype(str).str.strip()
 
-    if "DIAS_DE_FERIAS" in df_v.columns:
-        df_v["DIAS_DE_FERIAS"] = pd.to_numeric(df_v["DIAS_DE_FERIAS"], errors="coerce").fillna(0).astype(int)
+    if "DIAS_DE_FÉRIAS" in df_v.columns:
+        df_v["DIAS_DE_FÉRIAS"] = pd.to_numeric(df_v["DIAS_DE_FÉRIAS"], errors="coerce").fillna(0).astype(int)
 
     if "DT_INICIO" in df_v.columns:
         df_v["DT_INICIO"] = pd.to_datetime(df_v["DT_INICIO"], errors="coerce")
@@ -32,9 +32,9 @@ def process_vacation(db_path: str, df_vacation: pd.DataFrame):
             start = max(STAR_PERIOD, row["DT_INICIO"])
             end = min(END_PERIOD, row["DT_FIM"])
             return business_days_between(start, end) if end >= start else 0
-        elif "DIAS_DE_FERIAS" in row:
+        elif "DIAS_DE_FÉRIAS" in row:
             max_bd = business_days_between(STAR_PERIOD, END_PERIOD)
-            return min(int(row["DIAS_DE_FERIAS"] or 0), max_bd)
+            return min(int(row["DIAS_DE_FÉRIAS"] or 0), max_bd)
         return 0
 
     df_v["FERIAS_NO_PERIODO"] = df_v.apply(calc_holidays_on_period, axis=1)
@@ -48,7 +48,11 @@ def process_vacation(db_path: str, df_vacation: pd.DataFrame):
         df_merge["FERIAS_NO_PERIODO"] = df_merge["FERIAS_NO_PERIODO"].fillna(0).astype(int)
 
         df_merge["DIAS_UTEIS"] = pd.to_numeric(df_merge["DIAS_UTEIS"], errors="coerce").fillna(0).astype(int)
-        df_merge["DIAS_UTEIS"] = (df_merge["DIAS_UTEIS"] - df_merge["FERIAS_NO_PERIODO"]).clip(lower=0)
+        df_merge["DIAS_UTEIS"] = (
+            df_merge["DIAS_UTEIS"] - df_merge["FERIAS_NO_PERIODO"]
+        )
+        
+        df_merge = df_merge[df_merge["DIAS_UTEIS"] > 0].copy()
 
         df_merge.drop(columns=["FERIAS_NO_PERIODO"], inplace=True)
         df_merge.to_sql("report", conn, if_exists="replace", index=False)
