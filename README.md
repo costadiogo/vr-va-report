@@ -20,7 +20,7 @@ Sistema automatizado para cálculo e processamento de benefícios de Vale Refei�
 
 ```
 desafio04/
-├── st_app.py                # Interface principal Streamlit
+├── app.py                   # Interface principal Streamlit
 ├── database.db              # Banco SQLite gerado automaticamente
 ├── requirements.txt         # Dependências Python
 ├── src/
@@ -58,11 +58,12 @@ O sistema espera arquivos Excel com nomes e colunas padrão, por exemplo:
 
 ## ⚙️ Regras de Negócio
 
-- **Elegibilidade**: Exclui aprendizes, estagiários, diretores e gerentes
-- **Desligamento**: Até dia 15 com comunicado OK = excluído; até dia 15 sem OK = VR integral; após dia 15 = VR proporcional
-- **Admissão**: Admissão no mês = VR proporcional
-- **Férias**: Desconto de dias de férias nos dias úteis
-- **Valores**: Valor diário por estado, conforme sindicato
+- **Elegibilidade**: Exclui aprendizes, estagiários, diretores, afastados (licença maternidade, auxílio doença) e profissionais no exterior.
+- **Desligamento**: Até dia 15 com comunicado OK = excluído; até dia 15 sem OK = VR integral; após dia 15 = VR proporcional.
+- **Admissão**: Admissão no mês = VR proporcional.
+- **Férias**: Desconto de dias de férias nos dias úteis.
+- **Valores**: Valor diário por estado, conforme sindicato.
+- **Cálculo final**: Custo empresa = 80% do valor pago; desconto profissional = 20%.
 
 ## 🛠️ Tecnologias Utilizadas
 
